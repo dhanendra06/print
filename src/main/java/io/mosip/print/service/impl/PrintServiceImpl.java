@@ -843,7 +843,6 @@ public class PrintServiceImpl implements PrintService{
 	private void printStatusUpdate(String requestId, byte[] data, String credentialType)
 			throws DataShareException, ApiNotAccessibleException, IOException, Exception {
 		DataShare dataShare = null;
-		System.out.println("credenti  :: " + credentialType);
 		dataShare = dataShareUtil.getDataShare(data, getPolicy(credentialType), partnerId);
 		CredentialStatusEvent creEvent = new CredentialStatusEvent();
 		LocalDateTime currentDtime = DateUtils.getUTCCurrentDateTime();
@@ -898,7 +897,6 @@ public class PrintServiceImpl implements PrintService{
 			}
 		}
 	}
-
 		return data;
 
 	}
