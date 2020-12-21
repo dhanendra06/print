@@ -15,6 +15,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.UnrecoverableEntryException;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.spec.MGF1ParameterSpec;
@@ -30,6 +31,7 @@ import javax.crypto.spec.OAEPParameterSpec;
 import javax.crypto.spec.PSource.PSpecified;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.encodings.OAEPEncoding;
@@ -37,68 +39,79 @@ import org.bouncycastle.crypto.engines.RSAEngine;
 import org.bouncycastle.crypto.params.RSAKeyParameters;
 import org.springframework.stereotype.Component;
 
+import io.mosip.print.exception.CryptoManagerException;
+import io.mosip.print.exception.PlatformErrorMessages;
+
 @Component
 public class CryptoCoreUtil {
 
     private final static String RSA_ECB_OAEP_PADDING = "RSA/ECB/OAEPWITHSHA-256ANDMGF1PADDING";
 
+	private final static int THUMBPRINT_LENGTH = 32;
+
 	public String decrypt(String data) throws Exception {
-        PrivateKey privateKey = loadP12();
-        byte[] dataBytes = org.apache.commons.codec.binary.Base64.decodeBase64(data);
-        byte[] data1 = decryptData(dataBytes, privateKey);
+		PrivateKeyEntry privateKeyEntry = loadP12(data);
+		byte[] dataBytes = org.apache.commons.codec.binary.Base64.decodeBase64(data);
+		byte[] data1 = decryptData(dataBytes, privateKeyEntry);
         String strData = new String(data1);
 		return strData;
     }
 
-	public PrivateKey loadP12() throws KeyStoreException, NoSuchAlgorithmException, CertificateException,
-            IOException, UnrecoverableEntryException {
-        KeyStore mosipKeyStore = KeyStore.getInstance("PKCS12");
+	public PrivateKeyEntry loadP12(String encryptedData) throws KeyStoreException, NoSuchAlgorithmException,
+			CertificateException, IOException, UnrecoverableEntryException {
+		KeyStore mosipKeyStore = KeyStore.getInstance("PKCS12");
 		InputStream in = getClass().getClassLoader().getResourceAsStream("partner.p12");
 		mosipKeyStore.load(in, "password@123".toCharArray());
 		ProtectionParameter password = new PasswordProtection("password@123".toCharArray());
 		PrivateKeyEntry privateKeyEntry = (PrivateKeyEntry) mosipKeyStore.getEntry("partner", password);
-        PrivateKey privateKey = privateKeyEntry.getPrivateKey();
-        return privateKey;
-    }
+		return privateKeyEntry;
+	}
 
-	public static byte[] decryptData(byte[] key, PrivateKey privateKey) {
-
-        String keySplitter = "#KEY_SPLITTER#";
-        int keyDemiliterIndex = 0;
+	public static byte[] decryptData(byte[] requestData, PrivateKeyEntry privateKey) throws Exception {
+		String keySplitter = "#KEY_SPLITTER#";
 		SecretKey symmetricKey = null;
 		byte[] encryptedData = null;
-        final int cipherKeyandDataLength = key.length;
-        final int keySplitterLength = keySplitter.length();
-        keyDemiliterIndex = getSplitterIndex(key, keyDemiliterIndex, keySplitter);
-        byte[] encryptedKey = copyOfRange(key, 0, keyDemiliterIndex);
-		try {
-			encryptedData = copyOfRange(key, keyDemiliterIndex + keySplitterLength, cipherKeyandDataLength);
-        byte[] decryptedSymmetricKey = asymmetricDecrypt(privateKey, ((RSAPrivateKey) privateKey).getModulus(),
-                encryptedKey);
-			symmetricKey = new SecretKeySpec(decryptedSymmetricKey, 0, decryptedSymmetricKey.length, "AES");
+		byte[] encryptedSymmetricKey = null;
+		final int cipherKeyandDataLength = requestData.length;
+		final int keySplitterLength = keySplitter.length();
 
+		int keyDemiliterIndex = getSplitterIndex(requestData, 0, keySplitter);
+		byte[] encryptedKey = copyOfRange(requestData, 0, keyDemiliterIndex);
+		try {
+			encryptedData = copyOfRange(requestData, keyDemiliterIndex + keySplitterLength, cipherKeyandDataLength);
+			byte[] dataThumbprint = Arrays.copyOfRange(encryptedKey, 0, THUMBPRINT_LENGTH);
+			encryptedSymmetricKey = Arrays.copyOfRange(encryptedKey, THUMBPRINT_LENGTH, encryptedKey.length);
+			byte[] certThumbprint = getCertificateThumbprint(privateKey.getCertificate());
+
+			if (!Arrays.equals(dataThumbprint, certThumbprint)) {
+				throw new Exception("Error in generating Certificate Thumbprint.");
+			}
+
+			byte[] decryptedSymmetricKey = asymmetricDecrypt(privateKey.getPrivateKey(),
+					((RSAPrivateKey) privateKey.getPrivateKey()).getModulus(), encryptedSymmetricKey);
+			symmetricKey = new SecretKeySpec(decryptedSymmetricKey, 0, decryptedSymmetricKey.length, "AES");
+			return symmetricDecrypt(symmetricKey, encryptedData, null);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return symmetricDecrypt(symmetricKey, encryptedData, null);
-    }
+		throw new Exception("Not able to decrypt the data.");
+	}
 
-    private static int getSplitterIndex(byte[] encryptedData, int keyDemiliterIndex, String keySplitter) {
-        final byte keySplitterFirstByte = keySplitter.getBytes()[0];
-        final int keySplitterLength = keySplitter.length();
-        for (byte data : encryptedData) {
-            if (data == keySplitterFirstByte) {
-                final String keySplit = new String(
-                        copyOfRange(encryptedData, keyDemiliterIndex, keyDemiliterIndex + keySplitterLength));
-                if (keySplitter.equals(keySplit)) {
-                    break;
-                }
-            }
-            keyDemiliterIndex++;
-        }
-        return keyDemiliterIndex;
-    }
+	private static int getSplitterIndex(byte[] encryptedData, int keyDemiliterIndex, String keySplitter) {
+		final byte keySplitterFirstByte = keySplitter.getBytes()[0];
+		final int keySplitterLength = keySplitter.length();
+		for (byte data : encryptedData) {
+			if (data == keySplitterFirstByte) {
+				final String keySplit = new String(
+						copyOfRange(encryptedData, keyDemiliterIndex, keyDemiliterIndex + keySplitterLength));
+				if (keySplitter.equals(keySplit)) {
+					break;
+				}
+			}
+			keyDemiliterIndex++;
+		}
+		return keyDemiliterIndex;
+	}
 
 	/**
 	 * 
@@ -117,22 +130,22 @@ public class CryptoCoreUtil {
 			throws IllegalBlockSizeException, BadPaddingException, NoSuchAlgorithmException, NoSuchPaddingException,
 			InvalidAlgorithmParameterException, InvalidKeyException {
 
-        Cipher cipher;
-        try {
-            cipher = Cipher.getInstance(RSA_ECB_OAEP_PADDING);
-            OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256,
-                    PSpecified.DEFAULT);
-            cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepParams);
-            return cipher.doFinal(data);
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new NoSuchAlgorithmException(e);
-        } catch (NoSuchPaddingException e) {
-            throw new NoSuchPaddingException(e.getMessage());
-        } catch (java.security.InvalidKeyException e) {
-            throw new InvalidKeyException(e);
-        } catch (InvalidAlgorithmParameterException e) {
-            throw new InvalidAlgorithmParameterException(e);
-        }
+		Cipher cipher;
+		try {
+			cipher = Cipher.getInstance(RSA_ECB_OAEP_PADDING);
+			OAEPParameterSpec oaepParams = new OAEPParameterSpec("SHA-256", "MGF1", MGF1ParameterSpec.SHA256,
+					PSpecified.DEFAULT);
+			cipher.init(Cipher.DECRYPT_MODE, privateKey, oaepParams);
+			return cipher.doFinal(data);
+		} catch (java.security.NoSuchAlgorithmException e) {
+			throw new NoSuchAlgorithmException(e);
+		} catch (NoSuchPaddingException e) {
+			throw new NoSuchPaddingException(e.getMessage());
+		} catch (java.security.InvalidKeyException e) {
+			throw new InvalidKeyException(e);
+		} catch (InvalidAlgorithmParameterException e) {
+			throw new InvalidAlgorithmParameterException(e);
+		}
 	}
 
 	/**
@@ -146,11 +159,11 @@ public class CryptoCoreUtil {
 	private static byte[] unpadOAEPPadding(byte[] paddedPlainText, BigInteger keyModulus)
 			throws InvalidCipherTextException {
 
-			OAEPEncoding encode = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
-			BigInteger exponent = new BigInteger("1");
-			RSAKeyParameters keyParams = new RSAKeyParameters(false, keyModulus, exponent);
-			encode.init(false, keyParams);
-			return encode.processBlock(paddedPlainText, 0, paddedPlainText.length);
+		OAEPEncoding encode = new OAEPEncoding(new RSAEngine(), new SHA256Digest());
+		BigInteger exponent = new BigInteger("1");
+		RSAKeyParameters keyParams = new RSAKeyParameters(false, keyModulus, exponent);
+		encode.init(false, keyParams);
+		return encode.processBlock(paddedPlainText, 0, paddedPlainText.length);
 	}
 
 	private static byte[] symmetricDecrypt(SecretKey key, byte[] data, byte[] aad) {
@@ -168,8 +181,18 @@ public class CryptoCoreUtil {
 			output = cipher.doFinal(Arrays.copyOf(data, data.length - cipher.getBlockSize()));
 		} catch (Exception e) {
 
-	    }
+		}
 		return output;
-	} 
+	}
+
+	public static byte[] getCertificateThumbprint(Certificate cert) {
+		try {
+			return DigestUtils.sha256(cert.getEncoded());
+		} catch (java.security.cert.CertificateEncodingException e) {
+
+			throw new CryptoManagerException(PlatformErrorMessages.CERTIFICATE_THUMBPRINT_ERROR.getCode(),
+					PlatformErrorMessages.CERTIFICATE_THUMBPRINT_ERROR.getMessage(), e);
+		}
+	}
 }
 
