@@ -330,7 +330,7 @@ public class PrintServiceImpl implements PrintService{
 						PlatformErrorMessages.PRT_TEM_PROCESSING_FAILURE.getCode());
 			}
 			pdfbytes = uinCardGenerator.generateUinCard(uinArtifact, UinCardType.PDF, password);
-
+			
 		}
 			printStatusUpdate(requestId, pdfbytes, credentialType);
 			isTransactionSuccessful = true;
@@ -889,13 +889,15 @@ public class PrintServiceImpl implements PrintService{
 		webSubSubscriptionHelper.printStatusUpdateEvent(topic, creEvent);
 	}
 
-	public org.json.JSONObject decryptAttribute(org.json.JSONObject data, String encryptionPin, String credential) {
+	public org.json.JSONObject decryptAttribute(org.json.JSONObject data, String encryptionPin, String credential)
+			throws ParseException {
 
-		org.json.JSONObject jsonObj = new org.json.JSONObject(credential);
+		// org.json.JSONObject jsonObj = new org.json.JSONObject(credential);
+		JSONParser parser = new JSONParser(); // this needs the "json-simple" library
+		Object obj = parser.parse(credential);
+		JSONObject jsonObj = (org.json.simple.JSONObject) obj;
 
-		String strq = null;
-		org.json.JSONArray jsonArray = (org.json.JSONArray) jsonObj.get("protectedAttributes");
-		if (!jsonArray.isEmpty()) {
+		JSONArray jsonArray = (JSONArray) jsonObj.get("protectedAttributes");
 		for (Object str : jsonArray) {
 
 				CryptoWithPinRequestDto cryptoWithPinRequestDto = new CryptoWithPinRequestDto();
@@ -925,7 +927,7 @@ public class PrintServiceImpl implements PrintService{
 			
 			}
 
-		}
+
 		return data;
 	}
 	/*

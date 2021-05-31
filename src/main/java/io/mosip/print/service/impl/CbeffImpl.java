@@ -12,10 +12,9 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import io.mosip.kernel.core.cbeffutil.common.CbeffValidator;
-import io.mosip.kernel.core.cbeffutil.entity.BIR;
-import io.mosip.kernel.core.cbeffutil.jaxbclasses.BIRType;
+import io.mosip.print.entity.BIR;
 import io.mosip.print.spi.CbeffUtil;
+import io.mosip.print.util.CbeffValidator;
 
 /**
  * This class is used to create,update, validate and search Cbeff data.
@@ -66,7 +65,7 @@ public class CbeffImpl implements CbeffUtil {
 	@Override
 	public byte[] createXML(List<BIR> birList) throws Exception {
 		CbeffContainerImpl cbeffContainer = new CbeffContainerImpl();
-		BIRType bir = cbeffContainer.createBIRType(birList);
+		BIR bir = cbeffContainer.createBIRType(birList);
 		return CbeffValidator.createXMLBytes(bir, xsd);
 	}
 
@@ -82,7 +81,7 @@ public class CbeffImpl implements CbeffUtil {
 	@Override
 	public byte[] createXML(List<BIR> birList, byte[] xsd) throws Exception {
 		CbeffContainerImpl cbeffContainer = new CbeffContainerImpl();
-		BIRType bir = cbeffContainer.createBIRType(birList);
+		BIR bir = cbeffContainer.createBIRType(birList);
 		return CbeffValidator.createXMLBytes(bir, xsd);
 	}
 
@@ -97,7 +96,7 @@ public class CbeffImpl implements CbeffUtil {
 	@Override
 	public byte[] updateXML(List<BIR> birList, byte[] fileBytes) throws Exception {
 		CbeffContainerImpl cbeffContainer = new CbeffContainerImpl();
-		BIRType bir = cbeffContainer.updateBIRType(birList, fileBytes);
+		BIR bir = cbeffContainer.updateBIRType(birList, fileBytes);
 		return CbeffValidator.createXMLBytes(bir, xsd);
 	}
 
@@ -136,21 +135,20 @@ public class CbeffImpl implements CbeffUtil {
 	 */
 	@Override
 	public Map<String, String> getBDBBasedOnType(byte[] fileBytes, String type, String subType) throws Exception {
-		BIRType bir = CbeffValidator.getBIRFromXML(fileBytes);
+		BIR bir = CbeffValidator.getBIRFromXML(fileBytes);
 		return CbeffValidator.getBDBBasedOnTypeAndSubType(bir, type, subType);
 	}
 
 	/**
-	 * Method used for getting list of BIR from XML bytes.
-	 *
+	 * Method used for getting list of BIR from XML bytes	 *
 	 * @param xmlBytes byte array of XML data
 	 * @return List of BIR data extracted from XML
 	 * @throws Exception Exception
 	 */
 	@Override
-	public List<BIRType> getBIRDataFromXML(byte[] xmlBytes) throws Exception {
-		BIRType bir = CbeffValidator.getBIRFromXML(xmlBytes);
-		return bir.getBIR();
+	public List<BIR> getBIRDataFromXML(byte[] xmlBytes) throws Exception {
+		BIR bir = CbeffValidator.getBIRFromXML(xmlBytes);
+		return bir.getBirs();
 	}
 
 	/**
@@ -164,20 +162,8 @@ public class CbeffImpl implements CbeffUtil {
 	 */
 	@Override
 	public Map<String, String> getAllBDBData(byte[] xmlBytes, String type, String subType) throws Exception {
-		BIRType bir = CbeffValidator.getBIRFromXML(xmlBytes);
+		BIR bir = CbeffValidator.getBIRFromXML(xmlBytes);
 		return CbeffValidator.getAllBDBData(bir, type, subType);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * io.mosip.kernel.core.cbeffutil.spi.CbeffUtil#convertBIRTypeToBIR(java.util.
-	 * List)
-	 */
-	@Override
-	public List<BIR> convertBIRTypeToBIR(List<BIRType> birType) {
-		return CbeffValidator.convertBIRTypeToBIR(birType);
 	}
 
 	/*
@@ -188,20 +174,29 @@ public class CbeffImpl implements CbeffUtil {
 	 * java.lang.String)
 	 */
 	@Override
-	public List<BIRType> getBIRDataFromXMLType(byte[] xmlBytes, String type) throws Exception {
+	public List<BIR> getBIRDataFromXMLType(byte[] xmlBytes, String type) throws Exception {
 		return CbeffValidator.getBIRDataFromXMLType(xmlBytes, type);
 	}
+
 	
-	//TODO for testing, will be removed later
-//	public static void main(String arg[]) throws Exception
-//	{
-//		Map<String,String> test= new CbeffImpl().getBDBBasedOnType(readCreatedXML(),"Iris",null);
-//		System.out.println(test.size());
-//		
-//	}
-//	
-//	private static byte[] readCreatedXML() throws IOException {
-//		byte[] fileContent = Files.readAllBytes(Paths.get("C:\\Users\\M1046464\\Downloads\\cbeff1.xml"));
-//		return fileContent;
-//	}
+
+	/*
+	 * public static void main(String arg[]) throws Exception { byte[] xsd =
+	 * Files.readAllBytes(Paths.get("C:\\Users\\M1044287\\Desktop\\cbeff.xsd"));
+	 * CbeffImpl cbeffImpl = new CbeffImpl(); List<BIR> birs =
+	 * cbeffImpl.getBIRDataFromXML(readCreatedXML());
+	 * 
+	 * 
+	 * byte[] ac = new CbeffImpl().createXML(birs, xsd);
+	 * FileUtils.writeByteArrayToFile(new
+	 * File("C:\\Users\\M1044287\\Desktop\\a.xml"), ac);
+	 * 
+	 * }
+	 * 
+	 * private static byte[] readCreatedXML() throws IOException { byte[]
+	 * fileContent =
+	 * Files.readAllBytes(Paths.get("C:\\Users\\M1044287\\Desktop\\cbeff-dev.xml"));
+	 * return fileContent; }
+	 */
+
 }

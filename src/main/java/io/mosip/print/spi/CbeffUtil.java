@@ -1,17 +1,13 @@
-/**
- * 
- */
 package io.mosip.print.spi;
 
 import java.util.List;
 import java.util.Map;
 
-import io.mosip.kernel.core.cbeffutil.entity.BIR;
-import io.mosip.kernel.core.cbeffutil.jaxbclasses.BIRType;
-
+import io.mosip.print.entity.BIR;
 
 /**
- * @author Ramadurai Pandian
+ * @author 
+
  * 
  *         Interface for Cbeff Interface
  *
@@ -26,16 +22,14 @@ public interface CbeffUtil {
 
 	public boolean validateXML(byte[] xmlBytes) throws Exception;
 
-	public Map<String, String> getBDBBasedOnType(byte[] fileBytes, String type, String subType) throws Exception;
+	public Map<String, String> getBDBBasedOnType(byte[] fileBytes, String type,String subType) throws Exception;
 
-	public List<BIRType> getBIRDataFromXML(byte[] xmlBytes) throws Exception;
+	public List<BIR> getBIRDataFromXML(byte[] xmlBytes) throws Exception;
 
 	public Map<String, String> getAllBDBData(byte[] xmlBytes, String type, String subType) throws Exception;
 
 	public byte[] createXML(List<BIR> birList, byte[] xsd) throws Exception;
 
-	public List<BIR> convertBIRTypeToBIR(List<BIRType> birType);
-
-	public List<BIRType> getBIRDataFromXMLType(byte[] xmlBytes, String type) throws Exception;
+	public List<BIR> getBIRDataFromXMLType(byte[] xmlBytes, String type) throws Exception;
 
 }
