@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.mosip.print.service.impl.PDFGenerator;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,7 +24,6 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import io.mosip.print.constant.UinCardType;
@@ -35,7 +35,6 @@ import io.mosip.print.exception.PDFGeneratorException;
 import io.mosip.print.exception.PDFSignatureException;
 import io.mosip.print.service.PrintRestClientService;
 import io.mosip.print.service.impl.UinCardGeneratorImpl;
-import io.mosip.print.spi.PDFGenerator;
 import io.mosip.print.test.TestBootApplication;
 
 @SpringBootTest(classes = TestBootApplication.class)
