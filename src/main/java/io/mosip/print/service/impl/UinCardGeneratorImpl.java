@@ -17,7 +17,6 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.mosip.print.constant.ApiName;
-import io.mosip.print.constant.LoggerFileConstant;
 import io.mosip.print.constant.PDFGeneratorExceptionCodeConstant;
 import io.mosip.print.constant.UinCardType;
 import io.mosip.print.core.http.RequestWrapper;
@@ -32,7 +31,6 @@ import io.mosip.print.exception.PlatformErrorMessages;
 import io.mosip.print.logger.PrintLogger;
 import io.mosip.print.service.PrintRestClientService;
 import io.mosip.print.service.UinCardGenerator;
-import io.mosip.print.spi.PDFGenerator;
 import io.mosip.print.util.DateUtils;
 import io.mosip.print.util.RestApiClient;
 
