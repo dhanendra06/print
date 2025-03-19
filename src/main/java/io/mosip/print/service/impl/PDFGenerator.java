@@ -56,9 +56,10 @@ public class PDFGenerator  {
 		isValidInputStream(is);
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		try {
-			PdfRendererBuilder builder = FontPdfRendererBuilder.getBuilder(ttfFilePath);
 			String wellFormedHtml = preprocessHtml(is);
+			PdfRendererBuilder builder = FontPdfRendererBuilder.getBuilder(ttfFilePath);
 			builder.withHtmlContent(wellFormedHtml, null); // Convert InputStream to String
+			builder.useFastMode();
 			builder.toStream(os);
 			builder.run();
 		} catch (Exception e) {
