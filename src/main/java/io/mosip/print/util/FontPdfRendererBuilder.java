@@ -59,7 +59,7 @@ public class FontPdfRendererBuilder {
                     File tempFontFile = new File(tempFontDir, Objects.requireNonNull(resource.getFilename()));
                     Files.copy(fontStream, tempFontFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     LOGGER.info("Loaded font from classpath: {}", tempFontFile.getAbsolutePath());
-                    builder.useFont(tempFontFile, tempFontFile.getName().replace(".ttf", ""));
+                    builder.useFont(tempFontFile, tempFontFile.getName().replace(".ttf", ""), 400, PdfRendererBuilder.FontStyle.NORMAL, true);
                 }
             }
         }catch (Exception e) {
@@ -82,7 +82,7 @@ public class FontPdfRendererBuilder {
                 File tempFontFile = new File(tempFontDir, fontFile.getName());
                 Files.copy(fontFile.toPath(), tempFontFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 LOGGER.info("Loaded font from external directory: {}", tempFontFile.getAbsolutePath());
-                builder.useFont(tempFontFile, tempFontFile.getName().replace(".ttf", ""));
+                builder.useFont(tempFontFile, tempFontFile.getName().replace(".ttf", ""), 400, PdfRendererBuilder.FontStyle.NORMAL, true);
             }
         }catch (Exception e){
             LOGGER.error("Failed to load fonts from external font directory: {}. Reason: {}", externalTtfDir, e.getMessage());
