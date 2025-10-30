@@ -245,14 +245,18 @@ public class PrintServiceImpl implements PrintService {
                     return false;
                 }
             } catch (ProofDocumentNotFoundException | ProofTypeNotFoundException e) {
+				e.printStackTrace();
                 printLogger.error("Proof document is not available in the received credentials." +
                         " Id: {}, Transaction Id: {}", eventModel.getEvent().getId(), eventModel.getEvent().getTransactionId());
                 return false;
             } catch (UnknownException | PubicKeyNotFoundException e) {
+				e.printStackTrace();
                 printLogger.error("Received Credentials failed in verifiable credential verify method. So, the credentials will not be printed." +
                         " Id: {}, Transaction Id: {}", eventModel.getEvent().getId(), eventModel.getEvent().getTransactionId());
                 return false;
-            }
+            }catch (Exception e){
+				e.printStackTrace();
+			}
         }
         return true;
     }
